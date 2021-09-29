@@ -15,11 +15,6 @@ class Photo:
         return {"Content-Type": "application/json",
                 "Authorization": f"OAuth {self.yadisk_token}"}
 
-##    def get_number_id(self):
-##        number = requests.get("https://api.vk.com/method/users.get", params={"access_token": self.vk_token,
-##                                                                             "v": "5.131", "user_ids": f"{self.id}"})
-##        return number.json()['response'][0]['id']
-
     def get_photo_vk(self):
         photos_dict = {}
         result = requests.get("https://api.vk.com/method/photos.get", params={"access_token": self.vk_token,
