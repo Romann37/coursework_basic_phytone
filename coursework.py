@@ -8,17 +8,17 @@ class Photo:
 
     def __init__(self, vkid, yadisk_token):
         self.vk_token = input("введите токен для ВК: ")
-        self.yadisk_token = input("введите токен для Ядиск: ")
-        self.id = vkid
+        self.yadisk_token = yadisk_token
+        self.vkid = vkid
 
     def get_headers(self):
         return {"Content-Type": "application/json",
                 "Authorization": f"OAuth {self.yadisk_token}"}
 
-    def get_number_id(self):
-        number = requests.get("https://api.vk.com/method/users.get", params={"access_token": self.vk_token,
-                                                                             "v": "5.131", "user_ids": f"{self.id}"})
-        return number.json()['response'][0]['id']
+##    def get_number_id(self):
+##        number = requests.get("https://api.vk.com/method/users.get", params={"access_token": self.vk_token,
+##                                                                             "v": "5.131", "user_ids": f"{self.id}"})
+##        return number.json()['response'][0]['id']
 
     def get_photo_vk(self):
         photos_dict = {}
@@ -27,28 +27,24 @@ class Photo:
                                                                             "v": "5.131", "album_id": "profile",
                                                                             "extended": "1"})
         for item in result.json()["response"]["items"]:
-            if str(item['likes']['count']) in photos_dict:
+             if str(item['likes']['count']) in photos_dict:
                 name = str(item['likes']['count']) + '_' + str(item['date'])
-                photos_dict[name] = [item["sizes"][-1]['url']]
-                photos_dict[name].append(item['sizes'][-1]['type'])
-            else:
+             else:
                 name = str(item['likes']['count'])
-                photos_dict[name] = [item["sizes"][-1]['url']]
-                photos_dict[name].append(item['sizes'][-1]['type'])
+             photos_dict[name] = [item["sizes"][-1]['url']]
+             photos_dict[name].append(item['sizes'][-1]['type'])
         return photos_dict
 
-    def get_url(self):
-        url = requests.get('https://cloud-api.yandex.net:443/v1/disk/resources/upload',
-                           headers=self.get_headers(),
-                           params={"path": f"/photo_VK/", "overwrite": "True"}).json()['href']
-        return url
+
 
     def upload_yadisk(self):
         # Выполняем проверку наличия папки с нужным имененем на ЯДиске. Если нет то создаем ее.
-        if requests.get('https://cloud-api.yandex.net:443/v1/disk/resources', headers=self.get_headers(),
-                        params={'path': '/photo_VK'}).status_code == 404:
-            requests.put('https://cloud-api.yandex.net:443/v1/disk/resources', headers=self.get_headers(),
-                         params={'path': '/photo_VK'})
+        url = 'https://cloud-api.yandex.net:443/v1/disk/resources'
+        ya_path = '/photo_VK'
+        file_exist = requests.get(url, headers=self.get_headers(), params={'path': ya_path})
+        if file_exist.status_code == 404:
+            requests.put(url, headers=self.get_headers(), params={'path': ya_path})
+            
 
         # Загружаем фото и создаем список для json-файла
         jsonlist = []
@@ -56,7 +52,7 @@ class Photo:
         for filename, fileinside in tqdm(files.items()):
             information = {}
             requests.post('https://cloud-api.yandex.net:443/v1/disk/resources/upload', headers=self.get_headers(),
-                          params={'path': f"/photo VK/{filename}.jpg", 'url': f"{fileinside[0]}"}).json()
+                          params={'path': f"/photo_VK/{filename}.jpg", 'url': f"{fileinside[0]}"}).json()
             information["filename"] = f'{filename}.jpg'
             information['size'] = fileinside[1]
             jsonlist.append(information)
@@ -65,10 +61,10 @@ class Photo:
         with open('photo.json', 'w', encoding='utf-8') as f:
             json.dump(jsonlist, f, indent=2)
 
-#if __name__ == '__main__':
+if __name__ == '__main__':
     # Получаем токен от пользователя и вводим его id VK
-yadisk_token = input("введите токен для Ядиск: ")
-id_yadisk = input("введите id для ВК: ")
-uploader = Photo(id_yadisk, yadisk_token)
-result = uploader.upload_yadisk()
+    yadisk_token = input("введите токен для Ядиск: ")
+    vkid = input("введите id для ВК: ")
+    uploader = Photo(vkid, yadisk_token)
+    result = uploader.upload_yadisk()
    
